@@ -1,0 +1,57 @@
+[tool.poetry]
+name = "bsai"
+version = "0.1.0"
+description = ""
+authors = ["chega8"]
+readme = "README.md"
+packages = [{include = "bsai"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+python-dotenv = "^1.0.1"
+pydantic = "^2.7.3"
+pre-commit = "^3.7.1"
+python-telegram-bot = "^21.3"
+pytest = "^8.2.2"
+pydantic-settings = "^2.3.1"
+loguru = "^0.7.2"
+isort = "^5.13.2"
+black = "^24.4.2"
+motor = "^3.4.0"
+pytest-asyncio = "^0.23.7"
+psycopg2 = "^2.9.9"
+asyncpg = "^0.29.0"
+grpcio = "^1.64.1"
+grpcio-tools = "^1.64.1"
+torch = "^2.4.0"
+transformers = "^4.43.3"
+sentencepiece = "^0.2.0"
+tavily-python = "^0.5.0"
+openai = "^1.55.1"
+scikit-learn = "^1.5.2"
+beautifulsoup4 = "^4.12.3"
+pandas = "^2.2.3"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.4"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.poetry.extras]
+pipfile_deprecated_finder = ["isort"]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+skip-string-normalization = true
+
+[tool.isort]
+profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
