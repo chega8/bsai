@@ -26,16 +26,35 @@ class PostgresSettings(BaseSettings):
 
 
 class TavilySettings(BaseSettings):
-    token: str
+    api_key: str
 
     model_config = SettingsConfigDict(
         env_file="env", env_file_encoding="utf-8", env_prefix="TAVILY_", extra="allow"
     )
 
 
+class LLMSettings(BaseSettings):
+    model: str
+    token: str
+
+    model_config = SettingsConfigDict(
+        env_file="env", env_file_encoding="utf-8", env_prefix="LLM_", extra="allow"
+    )
+
+
+class DataSettings(BaseSettings):
+    path: str
+
+    model_config = SettingsConfigDict(
+        env_file="env", env_file_encoding="utf-8", env_prefix="DATA_", extra="allow"
+    )
+
+
 class Settings(BaseSettings):
     tavily: TavilySettings = TavilySettings()
+    llm: LLMSettings = LLMSettings()
     postgres: PostgresSettings = PostgresSettings()
+    data: DataSettings = DataSettings()
 
 
 settings = Settings()

@@ -1,6 +1,8 @@
 from loguru import logger
 from openai import OpenAI
 
+from config import settings
+
 
 class BaseLLM:
     def generate(self, query: str) -> str:
@@ -16,7 +18,7 @@ class BaseLLM:
 class OpenAIModel(BaseLLM):
     def __init__(self, name: str):
         self.name = name
-        self.client = OpenAI()
+        self.client = OpenAI(api_key=settings.llm.token)
 
     def generate(self, query: str) -> str:
         try:
@@ -24,7 +26,7 @@ class OpenAIModel(BaseLLM):
                 model=self.name,
                 messages=[{'role': 'user', 'content': query}],
             )
-            return completion.choices[0].message['content']
+            return completion.choices[0].message.content
         except Exception as e:
             logger.error(e)
             return ""

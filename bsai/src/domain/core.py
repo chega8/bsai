@@ -8,6 +8,8 @@ from bsai.src.domain.parser import BaseParser
 from bsai.src.domain.repository import BaseRepository
 from bsai.src.domain.vectorizer import BaseVectorizer
 
+from loguru import logger
+
 
 def parse_urls(urls: list[str], parser: BaseParser) -> list[str]:
     return parser.extract(urls)
@@ -55,16 +57,17 @@ def pipeline_urls(
     llm: BaseLLM,
     repository: BaseRepository,
 ):
-    existing_urls = set(repository.get_urls())
+    urls, texts = repository.get_urls()
+    existing_urls = set(urls)
     urls = [url for url in urls if url not in existing_urls]
 
-    texts = parse_urls(urls, parser)
+    texts, urls = parse_urls(urls, parser)
     repository.save_text(urls, texts)
 
     summaries = generate_summary(texts, llm)
     repository.save_summaries(urls, summaries)
 
-    vectors = generate_embedding(texts, vectorizer)
+    vectors = generate_embedding(summaries, vectorizer)
     repository.save_vectors(urls, vectors)
 
     clusters = generate_clusters(vectors, clusterer)
@@ -81,7 +84,7 @@ def recommend_random(repository: BaseRepository) -> tuple[str, str]:
     url = np.random.choice(existing_urls, 1)
     row = repository.get(url[0])
 
-    return row['url'], row['summary']
+    return row['url'].values[0], row['summary'].values[0]
 
 
 def show_cluster(repository: BaseRepository, cluster_id: int) -> List[str]:

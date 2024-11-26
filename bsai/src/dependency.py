@@ -23,7 +23,7 @@ def build_clusterizer() -> BaseClusterer:
 
 
 def build_parser() -> BaseParser:
-    return TavilyParser(settings.tavily.token)
+    return TavilyParser(settings.tavily.api_key)
 
 
 def build_repository() -> BaseRepository:
