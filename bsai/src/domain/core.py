@@ -13,7 +13,9 @@ def parse_urls(urls: list[str], parser: BaseParser) -> list[str]:
     return parser.extract(urls)
 
 
-def generate_clusters(vectors: list[list[float]], clusterer: BaseClusterer) -> List[int]:
+def generate_clusters(
+    vectors: list[list[float]], clusterer: BaseClusterer
+) -> List[int]:
     return clusterer.clusterize(vectors)
 
 
@@ -30,11 +32,11 @@ def generate_embedding(text, vectorizer: BaseVectorizer) -> list[list[float]]:
 
 
 def clusters_to_summary(
-        summaries: list[str],
-        clusters: list[int],
-        clusterer: BaseClusterer,
-        vectors,
-        llm: BaseLLM
+    summaries: list[str],
+    clusters: list[int],
+    clusterer: BaseClusterer,
+    vectors,
+    llm: BaseLLM,
 ) -> list[str]:
     cluster_to_summary = {}
     for cluster_id in set(clusters):
@@ -46,12 +48,12 @@ def clusters_to_summary(
 
 
 def pipeline_urls(
-        urls: list[str],
-        parser: BaseParser,
-        vectorizer: BaseVectorizer,
-        clusterer: BaseClusterer,
-        llm: BaseLLM,
-        repository: BaseRepository
+    urls: list[str],
+    parser: BaseParser,
+    vectorizer: BaseVectorizer,
+    clusterer: BaseClusterer,
+    llm: BaseLLM,
+    repository: BaseRepository,
 ):
     existing_urls = set(repository.get_urls())
     urls = [url for url in urls if url not in existing_urls]

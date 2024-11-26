@@ -1,6 +1,7 @@
 import os
 from abc import ABC
 from typing import Any
+
 import pandas as pd
 
 
@@ -9,13 +10,13 @@ class BaseRepository(ABC):
         ...
 
     def save(
-            self,
-            urls: list[str],
-            texts: list[str],
-            summary: list[str],
-            vectors: list[list[float]],
-            cluster_labels: list[int],
-            cluster_texts: list[str]
+        self,
+        urls: list[str],
+        texts: list[str],
+        summary: list[str],
+        vectors: list[list[float]],
+        cluster_labels: list[int],
+        cluster_texts: list[str],
     ):
         raise NotImplementedError
 
@@ -55,17 +56,22 @@ class DFRepository(BaseRepository):
     def _save(self, path, **kwargs):
         data = pd.DataFrame(kwargs)
         columns = data.columns
-        data.to_csv(path, mode='a', header=columns if not os.path.exists(path) else False, index=False)
+        data.to_csv(
+            path,
+            mode='a',
+            header=columns if not os.path.exists(path) else False,
+            index=False,
+        )
         del data
 
     def save(
-            self,
-            urls: list[str],
-            texts: list[str],
-            summary: list[str],
-            vectors: list[list[float]],
-            cluster_labels: list[int],
-            cluster_texts: list[str]
+        self,
+        urls: list[str],
+        texts: list[str],
+        summary: list[str],
+        vectors: list[list[float]],
+        cluster_labels: list[int],
+        cluster_texts: list[str],
     ):
         self._save(
             url=urls,
@@ -73,7 +79,7 @@ class DFRepository(BaseRepository):
             summary=summary,
             vector=vectors,
             cluster_label=cluster_labels,
-            cluster_text=cluster_texts
+            cluster_text=cluster_texts,
         )
 
     def save_text(self, urls: list[str], texts: list[str]):

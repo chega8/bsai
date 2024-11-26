@@ -13,9 +13,6 @@ class BaseVectorizer(ABC):
     def fit_transform(self, texts: list[str]) -> list[list[float]]:
         pass
 
-    def save(self, vectors, path):
-        pass
-
 
 class OpenAIVectorizer(BaseVectorizer):
     def __init__(self, emb_model='text-embedding-3-large'):

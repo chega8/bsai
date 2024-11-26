@@ -1,5 +1,5 @@
-from openai import OpenAI
 from loguru import logger
+from openai import OpenAI
 
 
 class BaseLLM:
@@ -7,9 +7,6 @@ class BaseLLM:
         raise NotImplementedError
 
     def get_summary(self, text: list[str]) -> list[str]:
-        raise NotImplementedError
-
-    def get_single_summary(self, text: str) -> str:
         raise NotImplementedError
 
     def get_cluster_topic(self, texts: list[str]) -> str:
@@ -42,16 +39,22 @@ class OpenAIModel(BaseLLM):
         prompt = """Summarize the following text:
         {}
         
-        Summary:""".format(text)
+        Summary:""".format(
+            text
+        )
         return self.generate(prompt)
 
     def get_cluster_topic(self, texts: list[str]) -> str:
         cluster_text = "\n".join(texts)
         prompt = """Extract the topic from the following texts:
         {}
-        Topic:""".format(cluster_text)
+        Topic:""".format(
+            cluster_text
+        )
         return self.generate(prompt)
 
     def get_embedding(self, text: str, model="text-embedding-3-large"):
         text = text.replace("\n", " ")
-        return self.client.embeddings.create(input=[text], model=model).data[0].embedding
+        return (
+            self.client.embeddings.create(input=[text], model=model).data[0].embedding
+        )

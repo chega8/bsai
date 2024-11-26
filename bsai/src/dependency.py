@@ -1,9 +1,8 @@
-from bsai.src.domain.clusterer import HDBSCANClusterer, BaseClusterer
-from bsai.src.domain.llm import OpenAIModel, BaseLLM
-from bsai.src.domain.parser import TavilyParser, BaseParser
+from bsai.src.domain.clusterer import BaseClusterer, HDBSCANClusterer
+from bsai.src.domain.llm import BaseLLM, OpenAIModel
+from bsai.src.domain.parser import BaseParser, TavilyParser
 from bsai.src.domain.repository import BaseRepository, DFRepository
-from bsai.src.domain.vectorizer import OpenAIVectorizer, BaseVectorizer
-
+from bsai.src.domain.vectorizer import BaseVectorizer, OpenAIVectorizer
 from config import settings
 
 

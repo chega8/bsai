@@ -1,9 +1,16 @@
 import argparse
 import os
-import bsai
+
 from bs4 import BeautifulSoup
 
-from bsai.src.dependency import build_parser, build_vectorizer, build_clusterizer, build_llm, build_repository
+import bsai
+from bsai.src.dependency import (
+    build_clusterizer,
+    build_llm,
+    build_parser,
+    build_repository,
+    build_vectorizer,
+)
 from bsai.src.domain.core import pipeline_urls
 
 
