@@ -9,6 +9,9 @@ class BaseLLM:
     def get_summary(self, text: list[str]) -> list[str]:
         raise NotImplementedError
 
+    def get_single_summary(self, text: str) -> str:
+        raise NotImplementedError
+
     def get_cluster_topic(self, texts: list[str]) -> str:
         raise NotImplementedError
 
@@ -32,12 +35,15 @@ class OpenAIModel(BaseLLM):
     def get_summary(self, texts: list[str]) -> list[str]:
         results = []
         for text in texts:
-            prompt = """Summarize the following text:
-            {}
-            
-            Summary:""".format(text)
-            results.append(self.generate(prompt))
+            results.append(self.get_single_summary(text))
         return results
+
+    def get_single_summary(self, text: str) -> str:
+        prompt = """Summarize the following text:
+        {}
+        
+        Summary:""".format(text)
+        return self.generate(prompt)
 
     def get_cluster_topic(self, texts: list[str]) -> str:
         cluster_text = "\n".join(texts)

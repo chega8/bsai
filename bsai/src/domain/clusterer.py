@@ -1,8 +1,9 @@
 import numpy as np
 from sklearn.cluster import DBSCAN, HDBSCAN
+import hdbscan
 
 
-class BaseClusterizer:
+class BaseClusterer:
     def clusterize(self, vectors: list[list[float]]) -> list[int]:
         raise NotImplementedError
 
@@ -18,9 +19,9 @@ class BaseClusterizer:
         raise NotImplementedError
 
 
-class HDBSCANClusterizer(BaseClusterizer):
+class HDBSCANClusterer(BaseClusterer):
     def __init__(self, min_cluster_size: int = 5):
-        self.hdbs = HDBSCAN(min_cluster_size)
+        self.hdbs = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size)
 
     def clusterize(self, vectors: list[np.ndarray]) -> list[int]:
         self.hdbs.fit(vectors)
@@ -36,5 +37,5 @@ class HDBSCANClusterizer(BaseClusterizer):
         return np.random.choice(cluster_samples, n_samples)
 
     def predict(self, vectors: list[np.ndarray]) -> np.ndarray:
-        # return self.hdbs.predict(vectors)
-        raise NotImplementedError
+        labels, probs = hdbscan.approximate_predict(self.hdbs, vectors)
+        return labels

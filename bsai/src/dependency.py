@@ -1,4 +1,4 @@
-from bsai.src.domain.clusterizer import HDBSCANClusterizer, BaseClusterizer
+from bsai.src.domain.clusterer import HDBSCANClusterer, BaseClusterer
 from bsai.src.domain.llm import OpenAIModel, BaseLLM
 from bsai.src.domain.parser import TavilyParser, BaseParser
 from bsai.src.domain.repository import BaseRepository, DFRepository
@@ -19,8 +19,8 @@ def build_vectorizer() -> BaseVectorizer:
     return OpenAIVectorizer()
 
 
-def build_clusterizer() -> BaseClusterizer:
-    return HDBSCANClusterizer()
+def build_clusterizer() -> BaseClusterer:
+    return HDBSCANClusterer()
 
 
 def build_parser() -> BaseParser:
