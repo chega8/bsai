@@ -82,6 +82,6 @@ def recommend_random(repository: BaseRepository) -> tuple[str, str]:
     return row['url'], row['summary']
 
 
-def show_cluster(repository: BaseRepository, cluster_id: int) -> List[str]
+def show_cluster(repository: BaseRepository, cluster_id: int) -> List[str]:
     rows = repository.get(cluster_id=cluster_id)
     return rows['url']
