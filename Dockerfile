@@ -7,5 +7,5 @@ COPY pyproject.toml poetry.lock /app/
 RUN poetry config virtualenvs.create false && poetry install --no-root
 
 COPY ./data /app/data
-COPY ./bsai/src /app/bsai/src
+COPY ./bsai /app/bsai
 COPY env /app/env

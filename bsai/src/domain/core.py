@@ -10,83 +10,110 @@ from bsai.src.domain.vectorizer import BaseVectorizer
 
 from loguru import logger
 
+from bsai.src.types.dto import ParsedText, Summary, Vector, Cluster
+from bsai.src.utils import visualize_clusters
 
-def parse_urls(urls: list[str], parser: BaseParser) -> list[str]:
-    return parser.extract(urls)
+
+def parse_urls(urls: list[str], parser: BaseParser) -> ParsedText:
+    urls, texts = parser.extract(urls)
+    return ParsedText(urls=urls, texts=texts)
+
+
+def generate_summary(parsed_text: ParsedText, llm: BaseLLM) -> Summary:
+    summary = llm.get_summary(parsed_text.texts)
+    texts = []
+    urls = []
+    summaries = []
+    for url, text, s in zip(parsed_text.urls, parsed_text.texts, summary):
+        if len(s) > 0:
+            urls.append(url)
+            summaries.append(s)
+    return Summary(urls=urls, summaries=summaries)
+
+
+def generate_embedding(summaries: Summary, vectorizer: BaseVectorizer) -> Vector:
+    vectors = vectorizer.fit_transform(summaries.texts)
+    return Vector(urls=summaries.urls, vectors=vectors)
 
 
 def generate_clusters(
-    vectors: list[list[float]], clusterer: BaseClusterer
-) -> List[int]:
-    return clusterer.clusterize(vectors)
-
-
-def generate_summary(texts: list[str], llm: BaseLLM) -> list[str]:
-    return llm.get_summary(texts)
+        vectors: Vector, clusterer: BaseClusterer
+) -> Cluster:
+    labels = clusterer.clusterize(vectors.vectors)
+    return Cluster(urls=vectors.urls, labels=labels, texts=[])
 
 
 def generate_topic(texts: list[str], llm: BaseLLM) -> str:
     return llm.get_cluster_topic(texts)
 
 
-def generate_embedding(text, vectorizer: BaseVectorizer) -> list[list[float]]:
-    return vectorizer.transform(text)
-
-
 def clusters_to_summary(
-    summaries: list[str],
-    clusters: list[int],
-    clusterer: BaseClusterer,
-    vectors,
-    llm: BaseLLM,
-) -> list[str]:
+        summaries: Summary,
+        clusters: Cluster,
+        clusterer: BaseClusterer,
+        vectors: Vector,
+        llm: BaseLLM,
+) -> Cluster:
     cluster_to_summary = {}
-    for cluster_id in set(clusters):
-        samples_idx = clusterer.samples_from_cluster(vectors, cluster_id)
-        samples = [summaries[i] for i in samples_idx]
+    for cluster_id in set(clusters.labels):
+        samples_idx = clusterer.samples_from_cluster(vectors.vectors, cluster_id)
+        samples = [summaries.texts[i] for i in samples_idx]
         cluster_to_summary[cluster_id] = generate_topic(samples, llm)
 
-    return [cluster_to_summary[cluster_id] for cluster_id in clusters]
+    cluster_urls = []
+    labels = []
+    texts = []
+    for cluster_id, cluster_url in zip(clusters.labels, clusters.urls):
+        cluster_text = cluster_to_summary[cluster_id]
+        cluster_urls.append(cluster_url)
+        labels.append(cluster_id)
+        texts.append(cluster_text)
+    return Cluster(urls=cluster_urls, labels=labels, texts=texts)
 
 
 def pipeline_urls(
-    urls: list[str],
-    parser: BaseParser,
-    vectorizer: BaseVectorizer,
-    clusterer: BaseClusterer,
-    llm: BaseLLM,
-    repository: BaseRepository,
+        urls: list[str],
+        parser: BaseParser,
+        vectorizer: BaseVectorizer,
+        clusterer: BaseClusterer,
+        llm: BaseLLM,
+        repository: BaseRepository,
 ):
-    urls, texts = repository.get_urls()
-    existing_urls = set(urls)
-    urls = [url for url in urls if url not in existing_urls]
+    parsed = repository.get_texts()
+    urls = [url for url in urls if url not in set(parsed.urls)]
 
-    texts, urls = parse_urls(urls, parser)
-    repository.save_text(urls, texts)
+    n_urls = len(urls)
+    # parsed = parse_urls(urls, parser)
+    # repository.save_texts(parsed)
+    logger.info(f"Extracted {len(parsed.texts)} texts from {n_urls} urls")
 
-    summaries = generate_summary(texts, llm)
-    repository.save_summaries(urls, summaries)
+    summaries = repository.get_summaries()
+    # summaries = generate_summary(parsed, llm)
+    # repository.save_summaries(summaries)
+    non_empty_summaries = [s for s in summaries.texts if len(s) > 0]
+    logger.info(f"Generated {len(non_empty_summaries)} summaries")
 
-    vectors = generate_embedding(summaries, vectorizer)
-    repository.save_vectors(urls, vectors)
+    vectors = repository.get_vectors()
+    # vectors = generate_embedding(summaries, vectorizer)
+    # repository.save_vectors(vectors)
+    logger.info(f"Generated {len(vectors.vectors)} embeddings")
 
     clusters = generate_clusters(vectors, clusterer)
-    repository.save_clusters(urls, clusters)
+    labels = clusters.labels
+    logger.info(f"Clustering {len(labels)} points, {len(set(labels))} unique clusters")
 
-    cluster_text = clusters_to_summary(summaries, clusters, clusterer, vectors, llm)
-    repository.save_cluster_texts(urls, cluster_text)
+    clusters = clusters_to_summary(summaries, clusters, clusterer, vectors, llm)
+    repository.save_clusters(clusters)
+    logger.info(f"Generated {len(set(clusters.texts))} cluster texts for {len(clusters.labels)} points")
 
-    repository.save(urls, texts, summaries, vectors, clusters, cluster_text)
+    repository.save(parsed, summaries, vectors, clusters)
 
 
 def recommend_random(repository: BaseRepository) -> tuple[str, str]:
-    existing_urls = repository.get_urls()
-    url = np.random.choice(existing_urls, 1)
-    row = repository.get(url[0])
-
-    return row['url'].values[0], row['summary'].values[0]
+    summary = repository.get_summaries()
+    idx = np.random.choice(len(summary.urls))
+    return summary.urls[idx], summary.texts[idx]
 
 
-def show_cluster(repository: BaseRepository, cluster_id: int) -> List[str]:
-    rows = repository.get(cluster_id=cluster_id)
-    return rows['url']
+def show_clusters(repository: BaseRepository):
+    visualize_clusters(repository.get_clusters(), repository.get_vectors())

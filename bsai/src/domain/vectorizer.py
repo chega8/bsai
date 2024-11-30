@@ -15,13 +15,13 @@ class BaseVectorizer(ABC):
 
 
 class OpenAIVectorizer(BaseVectorizer):
-    def __init__(self, emb_model='text-embedding-3-large'):
+    def __init__(self, emb_model='text-embedding-3-small'):
         super().__init__()
-        self.llm = OpenAIModel('gpt-4o')
+        self.llm = OpenAIModel('gpt-4o-mini')
         self.emb_model = emb_model
 
     def transform(self, texts: list[str]) -> list[list[float]]:
-        return [self.llm.get_embedding(text, self.emb_model) for text in texts]
+        return self.llm.get_embeddings(texts, self.emb_model)
 
     def fit_transform(self, texts: list[str]) -> list[list[float]]:
         return self.transform(texts)
