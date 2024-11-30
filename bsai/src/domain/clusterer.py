@@ -17,8 +17,8 @@ class BaseClusterer:
 
 
 class HDBSCANClusterer(BaseClusterer):
-    def __init__(self, min_cluster_size: int = 3):
-        self.hdbs = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size)
+    def __init__(self, min_cluster_size: int = 3, min_samples: int = 2):
+        self.hdbs = hdbscan.HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples)
 
     def clusterize(self, vectors: list[list[float]]) -> list[int]:
         self.hdbs.fit(vectors)

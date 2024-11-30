@@ -7,6 +7,9 @@ import pandas as pd
 from bsai.src.types.dto import ParsedText, Summary, Vector, Cluster
 from loguru import logger
 
+from bsai.src.utils import filter_urls
+
+
 class BaseRepository(ABC):
     def __init__(self):
         ...
@@ -20,7 +23,19 @@ class BaseRepository(ABC):
     ):
         raise NotImplementedError
 
+    def get_urls(self) -> list[str]:
+        raise NotImplementedError
+
+    def get_not_existing_urls(self, urls: list[str]) -> list[str]:
+        raise NotImplementedError
+
     def save_texts(self, parsed_text: ParsedText):
+        raise NotImplementedError
+
+    def get_not_existing_texts(self, urls: list[str]) -> ParsedText:
+        raise NotImplementedError
+
+    def save_urls(self, urls: list[str]):
         raise NotImplementedError
 
     def save_summaries(self, summary: Summary):
@@ -29,10 +44,16 @@ class BaseRepository(ABC):
     def get_summaries(self) -> Summary:
         raise NotImplementedError
 
+    def get_not_existing_summaries(self, urls: list[str]) -> Summary:
+        raise NotImplementedError
+
     def save_vectors(self, vectors: Vector):
         raise NotImplementedError
 
     def get_vectors(self) -> Vector:
+        raise NotImplementedError
+
+    def get_not_existing_vectors(self, urls: list[str]) -> Vector:
         raise NotImplementedError
 
     def save_clusters(self, clusters: Cluster):
@@ -107,6 +128,10 @@ class DFRepository(BaseRepository):
             cluster_text=cluster_texts,
         )
 
+    def save_urls(self, urls: list[str]):
+        path = os.path.join(self.path, "url.csv")
+        self._save(path, url=urls)
+
     def save_texts(self, parsed_text: ParsedText):
         path = os.path.join(self.path, "text.csv")
         self._save(path, url=parsed_text.urls, text=parsed_text.texts)
@@ -125,36 +150,79 @@ class DFRepository(BaseRepository):
 
     def get(self, url: str | None, cluster_id: int | None) -> pd.DataFrame:
         path = os.path.join(self.path, "all.csv")
-        df = pd.read_csv(self.path)
+        if not self.exist(path):
+            return pd.DataFrame()
+        df = self._get(path)
         if url:
             return df[df['url'] == url]
         if cluster_id:
             return df[df['cluster_label'] == cluster_id]
         return df
 
+    def get_urls(self) -> list[str]:
+        path = os.path.join(self.path, "url.csv")
+        if not self.exist(path):
+            return []
+        return self._get(path)['url'].tolist()
+
+    def get_not_existing_urls(self, urls: list[str]) -> list[str]:
+        existing_urls = self.get_urls()
+        return [url for url in urls if url not in set(existing_urls)]
+
     def get_texts(self) -> ParsedText:
-        if not self.exist():
-            return ParsedText(urls=[], texts=[])
         path = os.path.join(self.path, "text.csv")
+
+        if not self.exist(path):
+            return ParsedText(urls=[], texts=[])
+
         df = pd.read_csv(path)
         return ParsedText(urls=df['url'].tolist(), texts=df['text'].tolist())
 
+    def get_not_existing_texts(self, urls: list[str]) -> ParsedText:
+        texts = self.get_texts()
+        urls = filter_urls(texts.urls, urls)
+        return ParsedText(
+            urls=[url for url in texts.urls if url in urls],
+            texts=[text for url, text in zip(texts.urls, texts.texts) if url in urls],
+        )
+
     def get_summaries(self) -> Summary:
         path = os.path.join(self.path, "summary.csv")
+        if not self.exist(path):
+            return Summary(urls=[], texts=[])
         summaries = self._get(path)
         return Summary(urls=summaries['url'].tolist(), texts=summaries['summary'].tolist())
 
+    def get_not_existing_summaries(self, urls: list[str]) -> Summary:
+        summaries = self.get_summaries()
+        urls = filter_urls(summaries.urls, urls)
+        return Summary(
+            urls=[url for url in summaries.urls if url in urls],
+            texts=[text for url, text in zip(summaries.urls, summaries.texts) if url in urls],
+        )
+
     def get_vectors(self) -> Vector:
         path = os.path.join(self.path, "vector.csv")
+        if not self.exist(path):
+            return Vector(urls=[], vectors=[])
         vectors = self._get(path)
         vectors['vector'] = vectors['vector'].apply(ast.literal_eval)
         return Vector(urls=vectors['url'].tolist(), vectors=vectors['vector'].tolist())
 
+    def get_not_existing_vectors(self, urls: list[str]) -> Vector:
+        vectors = self.get_vectors()
+        urls = filter_urls(vectors.urls, urls)
+        return Vector(
+            urls=[url for url in vectors.urls if url in urls],
+            vectors=[vector for url, vector in zip(vectors.urls, vectors.vectors) if url in urls],
+        )
+
     def get_clusters(self) -> Cluster:
-        if not self.exist():
+        path = os.path.join(self.path, "cluster.csv")
+
+        if not self.exist(path):
             return Cluster(urls=[], labels=[], texts=[])
 
-        path = os.path.join(self.path, "cluster.csv")
         df = self._get(path)
         return Cluster(
             urls=df['url'].tolist(),
@@ -162,5 +230,5 @@ class DFRepository(BaseRepository):
             texts=df['cluster_text'].tolist()
         )
 
-    def exist(self) -> bool:
-        return os.path.exists(os.path.join(self.path, "text.csv"))
+    def exist(self, path: str) -> bool:
+        return os.path.exists(path)

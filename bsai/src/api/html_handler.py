@@ -30,14 +30,13 @@ def main():
     soup = BeautifulSoup(bookmarks, 'html.parser')
     links = soup.find_all('a')
     hrefs = [l['href'] for l in links]
-    logger.info(f"Found {len(hrefs)} links")
 
     url_parser = build_parser()
     vectorizer = build_vectorizer()
     clusterizer = build_clusterizer()
     llm = build_llm()
     repository = build_repository()
-    # pipeline_urls(hrefs, url_parser, vectorizer, clusterizer, llm, repository)
+    pipeline_urls(hrefs, url_parser, vectorizer, clusterizer, llm, repository)
 
     visualize_clusters(repository.get_clusters(), repository.get_vectors())
     url, text = recommend_random(repository)

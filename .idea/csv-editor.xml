@@ -38,6 +38,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="/data/storage/df_storage/url.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value=":" />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="/data/storage/df_storage/vector.csv">
           <value>
             <Attribute>

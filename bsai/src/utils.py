@@ -30,3 +30,7 @@ def visualize_clusters(clusters: Cluster, vectors: Vector):
         plt.scatter(avg_x, avg_y, marker="x", color=color, s=100)
     plt.title("Clusters identified visualized in language 2d using t-SNE")
     plt.show()
+
+
+def filter_urls(urls1: list[str], urls2: list[str]) -> set:
+    return set(urls1).difference(set(urls2))

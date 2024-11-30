@@ -1,5 +1,6 @@
 from loguru import logger
 from openai import OpenAI
+from pydantic import BaseModel
 
 from config import settings
 
@@ -13,6 +14,9 @@ LONG_SUMMARY_PROMPT_USER = """I will provide the content or description of a web
 - Extract the most important key points and concepts from the content.
 - Ensure the summary captures the main idea, subtopics, and specific details without leaving out crucial information.
 - Organize the summary in a clear and coherent manner.
+
+If the content contains useless or irrelevant information, for example, advertisements, please ignore it.
+Also if content contains errors or login page text, please ignore it. Mark the content as "useful": False.
 
 Input:
 {query}
@@ -32,12 +36,17 @@ Generate a short and precise summary (1-2 words) that reflects the semantic esse
 Input:
 {query}
 
-Summary:
+Cluster name:
 """
 
 
+class Summary(BaseModel):
+    is_useful: bool
+    summary: str
+
+
 class BaseLLM:
-    def generate(self, query: str) -> str:
+    def generate(self, query: str, structure: BaseModel | None = None) -> str:
         raise NotImplementedError
 
     def get_summary(self, texts: list[str]) -> list[str]:
@@ -52,13 +61,25 @@ class OpenAIModel(BaseLLM):
         self.name = name
         self.client = OpenAI(api_key=settings.llm.token)
 
-    def generate(self, dialog: list[dict]) -> str:
+    def generate(self, dialog: list[dict], structure: BaseModel | None = None) -> str:
         try:
-            completion = self.client.chat.completions.create(
-                model=self.name,
-                messages=dialog,
-            )
-            return completion.choices[0].message.content
+            if structure is None:
+                completion = self.client.chat.completions.create(
+                    model=self.name,
+                    messages=dialog,
+                )
+                return completion.choices[0].message.content
+            else:
+                completion = self.client.beta.chat.completions.parse(
+                    model=self.name,
+                    messages=dialog,
+                    response_format=Summary,
+                )
+                content = completion.choices[0].message.parsed
+                if content.is_useful:
+                    return content.summary
+                else:
+                    return ""
         except Exception as e:
             logger.error(e)
             return ""
@@ -75,7 +96,7 @@ class OpenAIModel(BaseLLM):
             {'role': 'system', 'content': LONG_SUMMARY_PROMPT_SYSTEM},
             {'role': 'user', 'content': LONG_SUMMARY_PROMPT_USER.format(query=query)},
         ]
-        return self.generate(dialog)
+        return self.generate(dialog, Summary)
 
     def get_cluster_topic(self, texts: list[str]) -> str:
         cluster_texts = "\n- " + "\n- ".join(texts)

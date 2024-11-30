@@ -23,12 +23,11 @@ def generate_summary(parsed_text: ParsedText, llm: BaseLLM) -> Summary:
     summary = llm.get_summary(parsed_text.texts)
     texts = []
     urls = []
-    summaries = []
-    for url, text, s in zip(parsed_text.urls, parsed_text.texts, summary):
+    for url, s in zip(parsed_text.urls, summary):
         if len(s) > 0:
             urls.append(url)
-            summaries.append(s)
-    return Summary(urls=urls, summaries=summaries)
+            texts.append(s)
+    return Summary(urls=urls, texts=texts)
 
 
 def generate_embedding(summaries: Summary, vectorizer: BaseVectorizer) -> Vector:
@@ -79,34 +78,36 @@ def pipeline_urls(
         llm: BaseLLM,
         repository: BaseRepository,
 ):
-    parsed = repository.get_texts()
-    urls = [url for url in urls if url not in set(parsed.urls)]
-
+    urls = repository.get_not_existing_urls(urls)
     n_urls = len(urls)
-    # parsed = parse_urls(urls, parser)
-    # repository.save_texts(parsed)
-    logger.info(f"Extracted {len(parsed.texts)} texts from {n_urls} urls")
+    if n_urls > 0:
+        repository.save_urls(urls)
+        logger.info(f"Found {len(urls)} new urls")
 
-    summaries = repository.get_summaries()
-    # summaries = generate_summary(parsed, llm)
-    # repository.save_summaries(summaries)
-    non_empty_summaries = [s for s in summaries.texts if len(s) > 0]
-    logger.info(f"Generated {len(non_empty_summaries)} summaries")
+        # parsed = repository.get_texts()
+        parsed = parse_urls(urls, parser)
+        repository.save_texts(parsed)
+        logger.info(f"Extracted {len(parsed.texts)} texts from {n_urls} urls")
 
-    vectors = repository.get_vectors()
-    # vectors = generate_embedding(summaries, vectorizer)
-    # repository.save_vectors(vectors)
-    logger.info(f"Generated {len(vectors.vectors)} embeddings")
+        # summaries = repository.get_summaries()
+        summaries = generate_summary(parsed, llm)
+        repository.save_summaries(summaries)
+        logger.info(f"Generated {len(summaries.texts)} summaries")
 
-    clusters = generate_clusters(vectors, clusterer)
-    labels = clusters.labels
-    logger.info(f"Clustering {len(labels)} points, {len(set(labels))} unique clusters")
+        # vectors = repository.get_vectors()
+        vectors = generate_embedding(summaries, vectorizer)
+        repository.save_vectors(vectors)
+        logger.info(f"Generated {len(vectors.vectors)} embeddings")
 
-    clusters = clusters_to_summary(summaries, clusters, clusterer, vectors, llm)
-    repository.save_clusters(clusters)
-    logger.info(f"Generated {len(set(clusters.texts))} cluster texts for {len(clusters.labels)} points")
+        clusters = generate_clusters(vectors, clusterer)
+        labels = clusters.labels
+        logger.info(f"Clustering {len(labels)} points, {len(set(labels))} unique clusters")
 
-    repository.save(parsed, summaries, vectors, clusters)
+        clusters = clusters_to_summary(summaries, clusters, clusterer, vectors, llm)
+        repository.save_clusters(clusters)
+        logger.info(f"Generated {len(set(clusters.texts))} cluster texts for {len(clusters.labels)} points")
+
+        repository.save(parsed, summaries, vectors, clusters)
 
 
 def recommend_random(repository: BaseRepository) -> tuple[str, str]:
